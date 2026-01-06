@@ -1,0 +1,12 @@
+/.idea/
+/.gradle/
+/.kotlin/
+**/build
+/kotlin-js-store/
+/gradle/
+/coverage/
+/.nyc_output/
+/node_modules/
+/package.json
+/package-lock.json
+wallet/src/jsMain/resources/snarkjs_ceremony/pot17_final.ptau

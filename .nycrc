@@ -1,0 +1,11 @@
+{
+  "reporter": ["cobertura", "html", "json-summary"],
+  "include": ["build/js/packages/deer-prototype-*-test/kotlin/deer-prototype-*.js"],
+  "inlineSourceMaps": true,
+  "cache": false,
+  "exclude-after-remap": false,
+  "skip-empty": true,
+  "es-modules": false,
+  "require": ["source-map-support/register"],
+  "enable-source-maps": true
+}

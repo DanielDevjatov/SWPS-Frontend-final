@@ -1,0 +1,82 @@
+#@ load("@ytt:data", "data")
+
+stages: [ build, test ]
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'parent_pipeline'
+
+default:
+  image: $CI_REGISTRY_IMAGE:job-image
+  cache:
+    - key: cache-$CI_COMMIT_REF_SLUG
+      paths:
+        - .gradle/
+        - build/
+    - key:
+        files: [ gradle/wrapper/gradle-wrapper.properties ]
+      paths:
+        - .gradle_home/
+  retry: 2
+
+variables:
+  GIT_CLONE_PATH: '$CI_BUILDS_DIR/$CI_PROJECT_NAME/$CI_COMMIT_REF_SLUG'
+  GIT_CLEAN_FLAGS: -fdx
+  GIT_STRATEGY: fetch
+
+#! Hidden job that defines empty needs and dependencies for all jobs those extend the base-job
+#! to reduce the traffic caused by downloading artifacts from previous jobs.
+#! If dependencies are defined, only artifacts of the listed jobs will be downloaded.
+.base-job:
+  dependencies: [ ]
+  needs: [ ]
+  artifacts:
+    expire_in: 2 weeks
+
+#! Build and cache the module in the pipeline without tests.
+#! The job will only run if changes on the module were made or changes were pushed
+#! to dev or master.
+#@yaml/text-templated-strings
+"(@= data.values.module @)-build":
+  stage: build
+  extends: .base-job
+  script:
+    #@yaml/text-templated-strings
+    - "./gradlew -g .gradle_home --build-cache --configuration-cache :(@= data.values.module @):assemble"
+
+#! Run unit tests for the module after successfully build
+#@yaml/text-templated-strings
+"(@= data.values.module @)-test":
+  stage: test
+  extends: .base-job
+  #@yaml/text-templated-strings
+  needs: [ "(@= data.values.module @)-build" ]
+  script:
+    #@yaml/text-templated-strings
+    - "./gradlew -g .gradle_home --build-cache --configuration-cache :(@= data.values.module @):check"
+  artifacts:
+    paths:
+      #@yaml/text-templated-strings
+      - "(@= data.values.module @)/build/test-results/**/*.xml"
+    reports:
+      junit: "(@= data.values.module @)/build/test-results/**/*.xml"
+
+#! Job to collect a code coverage report for the module.
+#! The job is executed every time to avoid misleading coverage results due to skipped tests.
+#@yaml/text-templated-strings
+"(@= data.values.module @)-coverage":
+  extends: .base-job
+  #@yaml/text-templated-strings
+  needs: [ "(@= data.values.module @)-build" ]
+  stage: test
+  #! Execute the custom Gradle task that pipes test results into the code coverage tool for mochajs nyc (istanbul),
+  #! because there is no kotlin tool to collect coverage for Kotlin/JS on multiplatform projects yet.
+  #! The python script filters the results since nyc will collect the coverage of imported libraries too.
+  script:
+    - npm install
+    #@yaml/text-templated-strings
+    - "npx nyc -- ./gradlew -g .gradle_home --build-cache cleanTest :(@= data.values.module @):jsNodeTest"
+  artifacts:
+    expire_in: 2 weeks
+    paths:
+      - .nyc_output/

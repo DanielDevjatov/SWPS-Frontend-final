@@ -1,0 +1,25 @@
+version: 2
+
+checks:
+  argument-count:
+    enabled: false
+  identical-code:
+    config:
+      threshold: 100
+  similar-code:
+    config:
+      threshold: 300
+
+exclude_patterns:
+  - .gitlab/
+  - .gradle/
+  - .gradle_home/
+  - .kotlin/
+  - cache
+  - build
+  - "**/build/"
+  - gradle
+  - kotlin-js-store/
+  - "**/resources/"
+  - "**/jsTest/"
+  - "**/commonTest"

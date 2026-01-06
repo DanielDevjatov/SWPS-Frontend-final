@@ -1,0 +1,24 @@
+﻿version: "3.9"
+
+services:
+  agent:
+    build: ./services/agent
+    ports:
+      - "8081:8081"
+    environment:
+      - PORT=8081
+      - AGGREGATOR_URL=http://aggregator:8082
+    depends_on:
+      - aggregator
+  aggregator:
+    build: ./services/aggregator
+    ports:
+      - "8082:8082"
+    environment:
+      - PORT=8082
+  tso:
+    build: ./services/tso
+    ports:
+      - "8083:8083"
+    environment:
+      - PORT=8083

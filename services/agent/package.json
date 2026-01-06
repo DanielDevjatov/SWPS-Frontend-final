@@ -1,0 +1,16 @@
+﻿{
+  "name": "agent-service",
+  "version": "1.0.0",
+  "description": "Redispatch agent service (MVP, no ZKP)",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "morgan": "^1.10.0",
+    "uuid": "^9.0.1"
+  }
+}

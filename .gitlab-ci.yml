@@ -1,0 +1,218 @@
+include:
+  - template: Jobs/Code-Quality.gitlab-ci.yml
+
+default:
+  image: $CI_REGISTRY_IMAGE:job-image
+  cache:
+    - key: cache-$CI_COMMIT_REF_SLUG
+      paths:
+        - .gradle/
+        - build/
+    - key:
+        files: [gradle/wrapper/gradle-wrapper.properties]
+      paths:
+        - .gradle_home/
+  retry: 2
+
+stages: [ triggers, test, deploy, cleanup ]
+
+variables:
+  GIT_CLONE_PATH: '$CI_BUILDS_DIR/$CI_PROJECT_NAME/$CI_COMMIT_REF_SLUG'
+  GIT_CLEAN_FLAGS: -fdx
+  GIT_STRATEGY: fetch
+
+# Create a Docker container that includes all additional dependencies used in other jobs,
+# so they don't have to be installed every time a job is executed.
+build-docker:
+  image: docker:latest
+  cache: [ ]
+  stage: .pre
+  script:
+    - docker login $CI_REGISTRY -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD
+    - docker build --network=host -t $CI_REGISTRY_IMAGE:job-image .
+    - docker push $CI_REGISTRY_IMAGE:job-image
+  rules:
+    - when: always
+
+# Hidden job that defines empty needs and dependencies for all jobs those extend the base-job
+# to reduce the traffic caused by downloading artifacts from previous jobs.
+# If dependencies are defined, only artifacts of the listed jobs will be downloaded.
+.base-job:
+  dependencies: [ ]
+  needs: [ ]
+  artifacts:
+    expire_in: 2 weeks
+
+generate-config:
+  stage: .pre
+  needs: [ build-docker ]
+  # Fetch current module names from Gradle and generate a pipeline for every module.
+  script:
+    - |
+      MODULES=$(./gradlew projects | grep -oP "(Project ':)\K\w+(?=')")
+      for MODULE_NAME in $MODULES
+      do
+        ytt --data-value module=$MODULE_NAME -f .module-template.yml -o yaml > $MODULE_NAME/.gitlab-ci.yml
+      done
+  artifacts:
+    paths:
+      - "*/.gitlab-ci.yml"
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH == 'dev'
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+
+# Trigger the generated pipeline for the wallet module if any file for wallet has changed
+wallet-trigger:
+  stage: triggers
+  # Variables are not inherited because they would contain the wrong paths for the child pipeline
+  inherit:
+    variables: false
+  variables:
+    # Set the builds dir manually since the variable that would be inherited by the pipeline does not contain the correct path
+    CI_BUILDS_DIR: "/builds"
+  trigger:
+    include:
+      - artifact: wallet/.gitlab-ci.yml
+        job: generate-config
+    strategy: depend
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH == 'dev'
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+      changes: [ wallet/**/* ]
+
+# Trigger the generated pipeline for the aggregator module. (see wallet-trigger)
+aggregator-trigger:
+  stage: triggers
+  inherit:
+    variables: false
+  variables:
+    CI_BUILDS_DIR: "/builds"
+  trigger:
+    include:
+      - artifact: aggregator/.gitlab-ci.yml
+        job: generate-config
+    strategy: depend
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH == 'dev'
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+      changes: [ aggregator/**/* ]
+
+# Collect pipeline reports from child pipelines manually via the API (since currently GitLab does not support this natively)
+collect-reports:
+  extends: .base-job
+  needs:
+    - job: wallet-trigger
+      optional: true
+    - job: aggregator-trigger
+      optional: true
+  stage: deploy
+  script:
+    - |
+      curl --silent --header "PRIVATE-TOKEN: $ACCESS_TOKEN" "https://gitlab.cc-asp.fraunhofer.de/api/v4/projects/$CI_PROJECT_ID/pipelines/$CI_PIPELINE_ID/bridges" \
+        | jq '.[].downstream_pipeline.id' \
+        | xargs -i curl --silent --header "PRIVATE-TOKEN: $ACCESS_TOKEN" "https://gitlab.cc-asp.fraunhofer.de/api/v4/projects/$CI_PROJECT_ID/pipelines/{}/jobs" \
+        | tee >((jq '.[] | select(.name | endswith("test")) | .id') > test_id.txt) \
+        | tee >((jq '.[] | select(.name | endswith("coverage")) | .id') > coverage_id.txt) \
+        | jq '.[] | select(.name | endswith("test") or endswith("coverage")) | .id' \
+        | xargs -i curl -sS --header "PRIVATE-TOKEN: $ACCESS_TOKEN" "https://gitlab.cc-asp.fraunhofer.de/api/v4/projects/$CI_PROJECT_ID/jobs/{}/artifacts" --output artifacts-{}.zip
+    - |
+      for ID in $(cat coverage_id.txt)
+      do
+        unzip -o artifacts-$ID.zip ||  echo "Can't unpack coverage job $ID"
+        rm artifacts-$ID.zip
+      done
+    - |
+      for FILE in *.zip
+      do
+        unzip "$FILE" -d "${FILE%.zip}" || echo "Can't unpack $FILE"
+      done
+    - npm install
+    - npx nyc report #./gradlew -g .gradle_home --build-cache --configuration-cache nycReport
+    - python custom_coverage_report.py ".+"
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH == 'dev'
+      allow_failure: true
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+      allow_failure: true
+  coverage: /^Statements\s*:\s*([^%]+)/
+  artifacts:
+    expose_as: Code Coverage Report
+    paths:
+      - coverage/
+    reports:
+      junit: "*/*/build/test-results/**/*.xml"
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage/cobertura-coverage.xml
+
+# Configure code_quality for a private runner and only execute it on MRs or dev / master.
+code_quality:
+  dependencies: [ ]
+  services: [ ]
+  tags:
+    - cq-sans-dind
+  artifacts:
+    paths:
+      - gl-code-quality-report.json
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+      allow_failure: true
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH == 'dev'
+      allow_failure: true
+
+# Additional code quality job to create an HTML report since the MR widget will only
+# show new changes on the code quality but no summary.
+# This is necessary because it could not be uploaded both at the same time.
+# See https://docs.gitlab.com/ee/ci/testing/code_quality_codeclimate_scanning.html#output-in-json-and-html-format
+code-quality-html:
+  extends: code_quality
+  variables:
+    REPORT_FORMAT: html
+  artifacts:
+    expose_as: Code Quality Report
+    paths:
+      - gl-code-quality-report.html
+
+# Job to create a custom code quality badge since there is no pre-defined gitlab badge for this.
+code-quality-badge:
+  #image: python:3.9
+  stage: deploy
+  extends: .base-job
+  needs: [ code_quality, code-quality-html ]
+  dependencies: [ code_quality ]
+  #before_script:
+  #  - pip install anybadge
+  script:
+    - python create_code_quality_badge.py
+  artifacts:
+    paths:
+      - code_quality_badge.svg
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH == 'dev'
+      allow_failure: true
+
+# Update the documentation page.
+# The job will only be executed on dev or master, and if changes on any src were made.
+pages:
+  dependencies: [ ]
+  stage: deploy
+  script:
+    - DOKKA=true ./gradlew -g .gradle_home :dokkaGenerate
+  artifacts:
+    paths:
+      - build/dokka/html
+  publish: build/dokka/html
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH == 'dev'
+      changes: [ "**/src/**/*" ]
+      allow_failure: true
+
+# Publish the wallet module to the maven repository.
+publish:
+  stage: deploy
+  script:
+    - ./gradlew -g .gradle_home publish
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
+      allow_failure: true

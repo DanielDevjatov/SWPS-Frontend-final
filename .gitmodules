@@ -1,0 +1,6 @@
+[submodule "wallet/src/commonMain/circom/circuits/circomlib"]
+	path = wallet/src/commonMain/circom/circuits/circomlib
+	url = https://github.com/iden3/circomlib.git
+[submodule "wallet/src/jsMain/resources/snarkjs_ceremony/circomlib"]
+	path = wallet/src/jsMain/resources/snarkjs_ceremony/circomlib
+	url = https://github.com/iden3/circomlib.git
