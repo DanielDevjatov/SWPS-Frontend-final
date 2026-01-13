@@ -1,8 +1,9 @@
 {
   "name": "nyc-dependencies",
   "dependencies": {
-    "snarkjs": "^0.7.4",
-    "circomlibjs": "^0.1.7"
+    "circomlibjs": "^0.1.7",
+    "recharts": "^3.6.0",
+    "snarkjs": "^0.7.4"
   },
   "devDependencies": {
     "istanbul-reports": "^3.1.7",
