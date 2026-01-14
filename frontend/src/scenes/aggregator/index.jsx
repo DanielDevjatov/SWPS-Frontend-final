@@ -23,6 +23,7 @@ const Aggregator = () => {
 
   const [consents, setConsents] = useState([]);
   const [presentations, setPresentations] = useState([]);
+  const [deviceBundles, setDeviceBundles] = useState([]);
   const [status, setStatus] = useState(null);
 
   /* ===== AUTOMATION STATE ===== */
@@ -31,12 +32,14 @@ const Aggregator = () => {
 
   const loadData = async () => {
     try {
-      const [c, p] = await Promise.all([
+      const [c, p, bundles] = await Promise.all([
         api.aggregator.listConsents(),
         api.aggregator.listPresentations(),
+        api.aggregator.listDeviceBundles(),
       ]);
       setConsents(c);
       setPresentations(p);
+      setDeviceBundles(bundles);
     } catch (e) {
       setStatus({ type: "error", message: e.message });
     }
@@ -207,6 +210,43 @@ const Aggregator = () => {
                 </TableCell>
               </TableRow>
             ))}
+          </TableBody>
+        </Table>
+      </Box>
+
+      {/* ===== DEVICE BUNDLES ===== */}
+      <Box mb="20px" p="20px" borderRadius="8px" bgcolor={colors.primary[400]}>
+        <Typography variant="h5" color={colors.greenAccent[500]}>
+          Device Bundles
+        </Typography>
+
+        <Divider sx={{ my: "10px" }} />
+
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Device ID</TableCell>
+              <TableCell>Device Name</TableCell>
+              <TableCell>OEM</TableCell>
+              <TableCell>Type</TableCell>
+              <TableCell>Prequals</TableCell>
+              <TableCell>Consents</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {deviceBundles.map((bundle) => {
+              const spec = bundle.deviceSpec?.payload;
+              return (
+                <TableRow key={bundle.deviceId}>
+                  <TableCell>{bundle.deviceId}</TableCell>
+                  <TableCell>{spec?.deviceName || "-"}</TableCell>
+                  <TableCell>{spec?.oemId || "-"}</TableCell>
+                  <TableCell>{spec?.deviceType || "-"}</TableCell>
+                  <TableCell>{bundle.prequals?.length || 0}</TableCell>
+                  <TableCell>{bundle.consents?.length || 0}</TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </Box>

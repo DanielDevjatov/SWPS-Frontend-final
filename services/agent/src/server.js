@@ -87,6 +87,24 @@ function storeDeviceSpec(body) {
   return stored;
 }
 
+// Section: Push device specs to the Aggregator for cross-credential linking
+async function pushDeviceSpecToAggregator(deviceSpec, aggregatorUrl = defaultAggregatorUrl) {
+  const target = (aggregatorUrl || '').replace(/\/$/, '');
+  const response = await fetch(`${target}/ingest/device-spec`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(deviceSpec),
+  });
+  const responseText = await response.text();
+  let parsedResponse = null;
+  try {
+    parsedResponse = JSON.parse(responseText);
+  } catch (_) {
+    parsedResponse = responseText || null;
+  }
+  return { ok: response.ok, status: response.status, body: parsedResponse };
+}
+
 // Section: Prequalification storage (normalized credential)
 function storePrequalification(body) {
   if (!body?.issuer || body.issuer !== tsoIssuer) {
@@ -119,7 +137,21 @@ app.post('/wallet/ingest/oem', (req, res) => {
 app.post('/wallet/ingest/device-spec', (req, res) => {
   try {
     const stored = storeDeviceSpec(req.body);
-    res.status(201).json({ status: 'stored', id: stored.id });
+    pushDeviceSpecToAggregator(stored)
+      .then((aggResponse) => {
+        if (!aggResponse.ok) {
+          return res.status(502).json({
+            status: 'stored',
+            id: stored.id,
+            error: 'Aggregator ingest failed',
+            aggregatorResponse: aggResponse.body,
+          });
+        }
+        return res.status(201).json({ status: 'stored', id: stored.id, aggregatorResponse: aggResponse.body });
+      })
+      .catch((err) =>
+        res.status(502).json({ status: 'stored', id: stored.id, error: 'Aggregator unreachable', reason: err.message })
+      );
   } catch (err) {
     res.status(err.statusCode || 400).json({ error: err.message });
   }
@@ -328,14 +360,32 @@ app.post('/admin/seed-one-oem-five-devices', (req, res) => {
   deviceWhitelist.clear();
 
   storeOem(oem);
-  devices.forEach((d) => {
-    storeDeviceSpec(d);
-  });
+  const storedDevices = devices.map((d) => storeDeviceSpec(d));
 
   // whitelist dev-1..dev-4
   ['dev-1', 'dev-2', 'dev-3', 'dev-4'].forEach((id) => deviceWhitelist.add(id));
 
-  res.json({ status: 'seeded', oems: 1, devices: devices.length, whitelist: Array.from(deviceWhitelist) });
+  Promise.all(
+    storedDevices.map((d) =>
+      pushDeviceSpecToAggregator(d).catch((err) => ({
+        ok: false,
+        status: 502,
+        body: { error: 'Aggregator unreachable', reason: err.message },
+      }))
+    )
+  )
+    .then((aggResponses) => {
+      res.json({
+        status: 'seeded',
+        oems: 1,
+        devices: devices.length,
+        whitelist: Array.from(deviceWhitelist),
+        aggregatorResponses: aggResponses,
+      });
+    })
+    .catch((err) =>
+      res.status(502).json({ error: 'Aggregator unreachable', reason: err.message })
+    );
 });
 
 // Section: Server boot
@@ -354,6 +404,7 @@ module.exports = {
   selectPrequalification,
   storePrequalification,
   storeDeviceSpec,
+  pushDeviceSpecToAggregator,
   storeOem,
   findDevice,
   decrementFlex,

@@ -26,6 +26,7 @@ const zkeyPath =
 const tsoIssuer = process.env.TSO_ISSUER || 'tso-1';
 const agentId = process.env.AGENT_ID || 'agent-1';
 const agentUrl = process.env.AGENT_URL || 'http://agent:8081';
+const aggregatorUrl = process.env.AGGREGATOR_URL || 'http://aggregator:8082';
 
 // Section: Lazy-load the verification key from the zkey file
 let verificationKeyPromise = null;
@@ -141,32 +142,56 @@ async function verifyAggregatorPresentation(presentation, opts = {}) {
 app.post('/prequalifications/issue', async (req, res) => {
   try {
     const credential = buildPrequalificationCredential(req.body);
-    const response = await fetch(`${agentUrl.replace(/\/$/, '')}/wallet/ingest/prequal`, {
+    const agentResponse = await fetch(`${agentUrl.replace(/\/$/, '')}/wallet/ingest/prequal`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(credential),
     });
 
-    const responseText = await response.text();
-    let parsedResponse = null;
+    const agentText = await agentResponse.text();
+    let parsedAgent = null;
     try {
-      parsedResponse = JSON.parse(responseText);
+      parsedAgent = JSON.parse(agentText);
     } catch (_) {
-      parsedResponse = responseText || null;
+      parsedAgent = agentText || null;
     }
 
-    if (!response.ok) {
+    if (!agentResponse.ok) {
       return res.status(502).json({
         code: 'agent_unreachable',
         message: 'Agent ingest failed',
-        agentResponse: parsedResponse,
+        agentResponse: parsedAgent,
+      });
+    }
+
+    const aggResponse = await fetch(`${aggregatorUrl.replace(/\/$/, '')}/ingest/prequal`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(credential),
+    });
+
+    const aggText = await aggResponse.text();
+    let parsedAgg = null;
+    try {
+      parsedAgg = JSON.parse(aggText);
+    } catch (_) {
+      parsedAgg = aggText || null;
+    }
+
+    if (!aggResponse.ok) {
+      return res.status(502).json({
+        code: 'aggregator_unreachable',
+        message: 'Aggregator ingest failed',
+        agentIngest: parsedAgent,
+        aggregatorResponse: parsedAgg,
       });
     }
 
     res.status(201).json({
       status: 'issued',
       prequalId: credential.id,
-      agentIngest: parsedResponse,
+      agentIngest: parsedAgent,
+      aggregatorIngest: parsedAgg,
     });
   } catch (err) {
     res.status(400).json({ code: 'invalid_request', message: err.message });

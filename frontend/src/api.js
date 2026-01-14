@@ -40,6 +40,7 @@ export const api = {
   aggregator: {
     listConsents: () => request(aggBase, "/consents"),
     listPresentations: () => request(aggBase, "/presentations"),
+    listDeviceBundles: () => request(aggBase, "/devices/bundles"),
     aggregate: (timeWindow) =>
       request(aggBase, "/presentations/aggregate", {
         method: "POST",

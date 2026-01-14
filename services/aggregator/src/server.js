@@ -14,7 +14,9 @@ app.use(express.json());
 app.use(morgan('tiny'));
 app.use(cors());
 
-// Section: In-memory storage for consents and presentations
+// Section: In-memory storage for incoming credentials and presentations
+const deviceSpecs = [];
+const prequals = [];
 const consents = [];
 const presentations = [];
 
@@ -56,6 +58,67 @@ function validateConsent(cred) {
   }
 }
 
+// Section: Input validation for device specifications
+function validateDeviceSpec(cred) {
+  if (!cred || cred.type !== 'DeviceSpecificationsCredential') {
+    throw new Error('Expected DeviceSpecificationsCredential');
+  }
+  if (!cred.payload || typeof cred.payload !== 'object') {
+    throw new Error('Missing device specification payload');
+  }
+  const deviceId = cred.payload.deviceId || cred.payload.deviceID;
+  if (!deviceId) {
+    throw new Error('deviceId is required');
+  }
+}
+
+// Section: Input validation for prequalification credentials
+function validatePrequal(cred) {
+  if (!cred || cred.type !== 'PrequalificationCredential') {
+    throw new Error('Expected PrequalificationCredential');
+  }
+  if (!cred.payload || typeof cred.payload !== 'object') {
+    throw new Error('Missing prequalification payload');
+  }
+  const deviceId = cred.payload.deviceId || cred.payload.deviceID;
+  if (!deviceId) {
+    throw new Error('deviceId is required');
+  }
+  if (typeof cred.payload.validFrom !== 'number' || typeof cred.payload.validTo !== 'number') {
+    throw new Error('validFrom and validTo must be numbers');
+  }
+}
+
+// Section: Normalize device specification payload and add metadata
+function normalizeDeviceSpec(body) {
+  validateDeviceSpec(body);
+  const payload = { ...body.payload };
+  payload.deviceId = payload.deviceId || payload.deviceID;
+  return {
+    type: 'DeviceSpecificationsCredential',
+    id: body.id || uuidv4(),
+    issuer: body.issuer || 'agent',
+    holder: body.holder || 'aggregator',
+    timestamp: body.timestamp || Date.now(),
+    payload,
+  };
+}
+
+// Section: Normalize prequalification payload and add metadata
+function normalizePrequal(body) {
+  validatePrequal(body);
+  const payload = { ...body.payload };
+  payload.deviceId = payload.deviceId || payload.deviceID;
+  return {
+    type: 'PrequalificationCredential',
+    id: body.id || uuidv4(),
+    issuer: body.issuer || 'tso',
+    holder: body.holder || 'aggregator',
+    timestamp: body.timestamp || Date.now(),
+    payload,
+  };
+}
+
 // Section: Normalize consent payload and add metadata
 function normalizeConsent(body) {
   validateConsent(body);
@@ -73,6 +136,30 @@ function normalizeConsent(body) {
   };
 }
 
+// Section: Ingest a device specification credential
+app.post('/ingest/device-spec', (req, res) => {
+  try {
+    const stored = normalizeDeviceSpec(req.body);
+    const filtered = deviceSpecs.filter((d) => d.payload.deviceId !== stored.payload.deviceId);
+    deviceSpecs.length = 0;
+    deviceSpecs.push(...filtered, stored);
+    res.status(201).json({ status: 'stored', id: stored.id });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Section: Ingest a prequalification credential
+app.post('/ingest/prequal', (req, res) => {
+  try {
+    const stored = normalizePrequal(req.body);
+    prequals.push(stored);
+    res.status(201).json({ status: 'stored', id: stored.id });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // Section: Ingest a single consent credential
 app.post('/ingest/consent', (req, res) => {
   try {
@@ -82,6 +169,16 @@ app.post('/ingest/consent', (req, res) => {
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
+});
+
+// Section: List all device specifications
+app.get('/device-specs', (req, res) => {
+  res.json(deviceSpecs);
+});
+
+// Section: List all prequalifications
+app.get('/prequals', (req, res) => {
+  res.json(prequals);
 });
 
 // Section: List all stored consents
@@ -105,6 +202,43 @@ function consentMatchesWindow(consent, timeWindow) {
   const payloadWindow = consent.payload?.timeWindow;
   return payloadWindow && payloadWindow.start === timeWindow.start && payloadWindow.end === timeWindow.end;
 }
+
+// Section: Build per-device bundles across credential types
+function buildDeviceBundles() {
+  const deviceMap = new Map();
+
+  deviceSpecs.forEach((spec) => {
+    const deviceId = spec.payload.deviceId || spec.payload.deviceID;
+    if (!deviceMap.has(deviceId)) {
+      deviceMap.set(deviceId, { deviceId, deviceSpec: spec, prequals: [], consents: [] });
+    } else {
+      deviceMap.get(deviceId).deviceSpec = spec;
+    }
+  });
+
+  prequals.forEach((p) => {
+    const deviceId = p.payload.deviceId || p.payload.deviceID;
+    if (!deviceMap.has(deviceId)) {
+      deviceMap.set(deviceId, { deviceId, deviceSpec: null, prequals: [], consents: [] });
+    }
+    deviceMap.get(deviceId).prequals.push(p);
+  });
+
+  consents.forEach((c) => {
+    const deviceId = c.payload?.deviceId || c.payload?.deviceID;
+    if (!deviceMap.has(deviceId)) {
+      deviceMap.set(deviceId, { deviceId, deviceSpec: null, prequals: [], consents: [] });
+    }
+    deviceMap.get(deviceId).consents.push(c);
+  });
+
+  return Array.from(deviceMap.values());
+}
+
+// Section: List device bundles (spec + prequals + consents)
+app.get('/devices/bundles', (req, res) => {
+  res.json(buildDeviceBundles());
+});
 
 // Section: Generate a demo ZKP proof for aggregated totalFlexKW
 async function generateProof(totalFlexKW) {
@@ -189,6 +323,10 @@ if (require.main === module) {
 // Section: Public module API for tests
 module.exports = {
   normalizeConsent,
+  normalizeDeviceSpec,
+  normalizePrequal,
+  deviceSpecs,
+  prequals,
   consents,
   presentations,
   aggregateConsents,

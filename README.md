@@ -4,26 +4,26 @@
 This repo contains a minimal Redispatch prototype with three Node/Express
 services (Agent, Aggregator, TSO) plus a React frontend for local use.
 
-## Prerequisites
+## Fresh Setup (Step by Step)
 
+### Step 0: Install prerequisites
 - Docker Desktop
-- Node.js 18+ and npm (for frontend dev)
+- Node.js 18+ and npm (for the frontend)
 
-## Quick Start (Backend)
-
+### Step 1: Start the backend (Docker)
 From the repo root:
-```bash
+```powershell
 docker compose up --build
 ```
 
-Services:
+Backend URLs:
 - Agent: http://localhost:8081
 - Aggregator: http://localhost:8082
 - TSO: http://localhost:8083
 
-## Quick Start (Frontend)
-
-```bash
+### Step 2: Start the frontend (React)
+Open a new terminal:
+```powershell
 cd "frontend"
 npm install
 npm start
@@ -40,7 +40,19 @@ Frontend env (already in `frontend/.env`):
 Note: These `localhost` URLs are correct for local dev.
 If the frontend runs in Docker, use service hostnames or a reverse proxy.
 
-## Seed Demo Data
+## UI Demo (No Terminal Required)
+
+Once the frontend is open:
+1) Go to **Agent**.
+2) Click **Seed OEM & Devices**.
+3) Select a device and click **Request Prequalification**.
+4) Enter maxFlex/timeWindow and click **Create & Push Consent**.
+5) Go to **Aggregator** and click **Create Aggregated Presentation**.
+6) Go to **TSO** and click **Verify**.
+
+If a device has no prequal, the consent will be blocked (expected).
+
+## Seed Demo Data (API)
 
 Seed one OEM and five devices (whitelist only; prequals are issued by TSO):
 ```bash
