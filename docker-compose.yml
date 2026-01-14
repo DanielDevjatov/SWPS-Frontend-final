@@ -1,6 +1,10 @@
-﻿version: "3.9"
+# Summary (FinalFinal): Added code to *.
+# Purpose: document changes and explain behavior.
+version: "3.9"
 
 services:
+# Section: Service definitions and local port mappings
+  # Section: Agent service (Wallet + policy checks)
   agent:
     build: ./services/agent
     ports:
@@ -10,15 +14,19 @@ services:
       - AGGREGATOR_URL=http://aggregator:8082
     depends_on:
       - aggregator
+  # Section: Aggregator service (Consent storage + aggregation)
   aggregator:
     build: ./services/aggregator
     ports:
       - "8082:8082"
     environment:
       - PORT=8082
+  # Section: TSO service (Verification endpoint)
   tso:
     build: ./services/tso
     ports:
       - "8083:8083"
     environment:
       - PORT=8083
+
+

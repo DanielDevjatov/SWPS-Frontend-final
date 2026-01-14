@@ -1,9 +1,13 @@
+// Summary (FinalFinal): Added code to *.
+// Purpose: document changes and explain behavior.
+// Section: Shared error helper with HTTP status support
 function validationError(message, statusCode = 400) {
   const err = new Error(message);
   err.statusCode = statusCode;
   return err;
 }
 
+// Section: Normalize + validate prequalification payloads
 function normalizePrequalification(body, defaults = {}) {
   if (!body || body.type !== 'PrequalificationCredential') {
     throw validationError('Expected credential type PrequalificationCredential');
@@ -28,6 +32,7 @@ function normalizePrequalification(body, defaults = {}) {
     throw validationError('deviceId is required on prequalification');
   }
 
+  // Build the normalized credential with standard metadata fields.
   return {
     type: 'PrequalificationCredential',
     id: body.id || defaults.id,
@@ -38,6 +43,7 @@ function normalizePrequalification(body, defaults = {}) {
   };
 }
 
+// Section: Choose a prequalification that covers the requested timeWindow
 function selectPrequalification(prequals, deviceId, timeWindow) {
   if (!prequals || !prequals.length) {
     throw validationError('no valid prequalification for device/timeWindow', 403);
@@ -61,4 +67,7 @@ function selectPrequalification(prequals, deviceId, timeWindow) {
   return matches.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))[0];
 }
 
+// Section: Public module API
 module.exports = { normalizePrequalification, selectPrequalification, validationError };
+
+

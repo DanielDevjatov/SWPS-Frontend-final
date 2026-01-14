@@ -1,4 +1,4 @@
-### Checklist
+﻿<!-- Summary (FinalFinal): Added code to *. Purpose: document changes and explain behavior. -->\r\n### Checklist
 
 ---
 
@@ -14,3 +14,4 @@
 
 /draft
 /assign me
+

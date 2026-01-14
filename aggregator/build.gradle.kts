@@ -1,4 +1,4 @@
-import org.jetbrains.dokka.gradle.engine.parameters.VisibilityModifier
+﻿// Summary (FinalFinal): Added code to *.\r\n// Purpose: document changes and explain behavior.\r\nimport org.jetbrains.dokka.gradle.engine.parameters.VisibilityModifier
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 
 group = "org.fim.deer.aggregator"
@@ -50,3 +50,4 @@ kotlin {
     dependencies { }
   }
 }
+

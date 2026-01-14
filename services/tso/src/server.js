@@ -1,3 +1,6 @@
+// Summary (FinalFinal): Added code to *.
+// Purpose: document changes and explain behavior.
+// Section: Imports (HTTP server, logging, ZKP helpers, IDs)
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
@@ -6,18 +9,22 @@ const fs = require('fs');
 const { groth16, zKey } = require('snarkjs');
 const { v4: uuidv4 } = require('uuid');
 
+// Section: Express app setup + middleware
 const app = express();
 app.use(express.json());
 app.use(morgan('tiny'));
 app.use(cors());
 
+// Section: In-memory storage for presentations and verifications
 const presentations = [];
 const verifications = [];
 
+// Section: ZKP artifact path (configurable via env)
 const zkeyPath =
   process.env.ZKP_ZKEY_PATH ||
   path.join(__dirname, '..', 'zkp', 'test_circuit', 'test_circuit.zkey');
 
+// Section: Lazy-load the verification key from the zkey file
 let verificationKeyPromise = null;
 async function getVerificationKey() {
   if (!verificationKeyPromise) {
@@ -28,14 +35,17 @@ async function getVerificationKey() {
   return verificationKeyPromise;
 }
 
+// Section: Health endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// Section: Numeric validation helper
 function isNumber(value) {
   return typeof value === 'number' && Number.isFinite(value);
 }
 
+// Section: Validate + verify AggregatorPresentations (includes ZKP)
 async function verifyAggregatorPresentation(presentation, opts = {}) {
   if (!presentation || presentation.type !== 'AggregatorPresentation') {
     return { status: 'invalid', reason: 'Invalid presentation type' };
@@ -79,6 +89,7 @@ async function verifyAggregatorPresentation(presentation, opts = {}) {
   }
 }
 
+// Section: Ingest endpoint that verifies and stores presentations
 app.post('/presentations/ingest', async (req, res) => {
   const incoming = req.body || {};
   const id = incoming.id || uuidv4();
@@ -99,6 +110,7 @@ app.post('/presentations/ingest', async (req, res) => {
   res.status(httpStatus).json({ status: result.status, reason: result.reason, id });
 });
 
+// Section: Verification-only endpoint (stores a verification record)
 app.post('/verify/aggregator-presentation', async (req, res) => {
   const presentation = req.body || {};
   const result = await verifyAggregatorPresentation(presentation);
@@ -116,14 +128,17 @@ app.post('/verify/aggregator-presentation', async (req, res) => {
   res.status(result.status === 'valid' ? 200 : 400).json(record);
 });
 
+// Section: List stored presentations
 app.get('/presentations', (req, res) => {
   res.json(presentations);
 });
 
+// Section: List verification records
 app.get('/verifications', (req, res) => {
   res.json(verifications);
 });
 
+// Section: Service bootstrap
 const port = process.env.PORT || 8083;
 if (require.main === module) {
   app.listen(port, () => {
@@ -131,4 +146,7 @@ if (require.main === module) {
   });
 }
 
+// Section: Public module API for tests
 module.exports = { verifyAggregatorPresentation };
+
+

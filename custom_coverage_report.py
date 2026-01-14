@@ -1,4 +1,4 @@
-import os
+﻿# Summary (FinalFinal): Added code to *.\r\n# Purpose: document changes and explain behavior.\r\nimport os
 import json
 import re
 import sys
@@ -40,3 +40,4 @@ with open(file_path, 'r') as file:
         print("================================================================================")
     except:
         print("Couldn't gather coverage data.")
+

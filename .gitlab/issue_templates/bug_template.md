@@ -1,4 +1,4 @@
-### Summary
+﻿<!-- Summary (FinalFinal): Added code to *. Purpose: document changes and explain behavior. -->\r\n### Summary
 
 ---
 <!-- Summarize the bug encountered concisely. -->
@@ -30,3 +30,4 @@
  as it's tough to read otherwise. -->
 
 /label ~bug ~refinement
+

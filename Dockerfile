@@ -1,4 +1,4 @@
-FROM gradle:latest
+﻿# Summary (FinalFinal): Added code to *.\r\n# Purpose: document changes and explain behavior.\r\nFROM gradle:latest
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ENV NVM_DIR=/root/.nvm
@@ -17,3 +17,4 @@ RUN source $NVM_DIR/nvm.sh && nvm install $NODE_VERSION && nvm use $NODE_VERSION
 ENTRYPOINT ["bash", "-c", "source $NVM_DIR/nvm.sh && exec \"$@\"", "--"]
 
 CMD ["/bin/bash"]
+

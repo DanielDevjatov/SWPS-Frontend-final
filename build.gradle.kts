@@ -1,4 +1,4 @@
-import com.github.gradle.node.npm.task.NpxTask
+﻿// Summary (FinalFinal): Added code to *.\r\n// Purpose: document changes and explain behavior.\r\nimport com.github.gradle.node.npm.task.NpxTask
 
 group = "org.fim"
 version = "0.1.0"
@@ -47,3 +47,4 @@ subprojects.forEach {
     else listOf("--", "./gradlew", "cleanTest", ":${it.name}:jsNodeTest")
   }
 }
+

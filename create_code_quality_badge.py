@@ -1,4 +1,4 @@
-import json
+﻿# Summary (FinalFinal): Added code to *.\r\n# Purpose: document changes and explain behavior.\r\nimport json
 import os
 import anybadge
 from collections import Counter
@@ -54,3 +54,4 @@ badge = anybadge.Badge(
 
 badge.write_badge('code_quality_badge.svg')
 print(f"Quality badge created with level: {quality_level}")
+

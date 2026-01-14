@@ -1,4 +1,4 @@
-/.idea/
+﻿# Summary (FinalFinal): Added code to *.\r\n# Purpose: document changes and explain behavior.\r\n/.idea/
 /.gradle/
 /.kotlin/
 **/build
@@ -10,3 +10,4 @@
 /package.json
 /package-lock.json
 wallet/src/jsMain/resources/snarkjs_ceremony/pot17_final.ptau
+

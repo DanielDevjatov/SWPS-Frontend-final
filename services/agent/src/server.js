@@ -1,3 +1,5 @@
+// Summary (FinalFinal): Added code to *.
+// Purpose: document changes and explain behavior.
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
@@ -6,11 +8,13 @@ const { normalizePrequalification, selectPrequalification, validationError } = r
 const { normalizeDeviceSpec } = require('./device');
 const { buildSeedOneOemFiveDevices } = require('./seed');
 
+// Section: Express app setup
 const app = express();
 app.use(express.json());
 app.use(morgan('tiny'));
 app.use(cors());
 
+// Section: In-memory state (wallet contents + last consent)
 const state = {
   deviceSpecs: [],
   prequals: [],
@@ -18,13 +22,16 @@ const state = {
   lastConsent: null,
 };
 
+// Section: Runtime config and whitelist
 // Device whitelist (deviceIds)
 const initialDeviceWhitelist = (process.env.DEVICE_WHITELIST || '').split(',').map((s) => s.trim()).filter(Boolean);
 const deviceWhitelist = new Set(initialDeviceWhitelist);
 
+// Section: Service identity and default URLs
 const agentId = process.env.AGENT_ID || 'agent-1';
 const defaultAggregatorUrl = process.env.AGGREGATOR_URL || 'http://localhost:8082';
 
+// Section: Error helper used by policy checks
 function validationErrorWithStatus(message, statusCode = 400, extra = {}) {
   const err = validationError(message);
   err.statusCode = statusCode;
@@ -35,10 +42,12 @@ function validationErrorWithStatus(message, statusCode = 400, extra = {}) {
   return err;
 }
 
+// Section: Health endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// Section: OEM storage (validate + upsert by oemId)
 function storeOem(body) {
   if (!body || body.type !== 'OEMCredential') {
     throw validationError('Expected credential type OEMCredential');
@@ -69,6 +78,7 @@ function storeOem(body) {
   return stored;
 }
 
+// Section: Device storage (validate + upsert by deviceId)
 function storeDeviceSpec(body) {
   const stored = normalizeDeviceSpec(body, { issuer: agentId, holder: agentId });
   state.deviceSpecs = state.deviceSpecs.filter((d) => d.payload.deviceId !== stored.payload.deviceId);
@@ -76,6 +86,7 @@ function storeDeviceSpec(body) {
   return stored;
 }
 
+// Section: Prequalification storage (normalized credential)
 function storePrequalification(body) {
   const stored = normalizePrequalification(body, {
     deviceID: body.payload?.deviceId || body.payload?.deviceID,
@@ -88,6 +99,7 @@ function storePrequalification(body) {
   return stored;
 }
 
+// Section: Wallet ingest endpoints
 app.post('/wallet/ingest/oem', (req, res) => {
   try {
     const stored = storeOem(req.body);
@@ -115,6 +127,7 @@ app.post('/wallet/ingest/prequal', (req, res) => {
   }
 });
 
+// Section: Wallet read endpoints
 app.get('/wallet/device-specs', (req, res) => {
   res.json(state.deviceSpecs);
 });
@@ -143,6 +156,7 @@ app.get('/admin/whitelist', (req, res) => {
   res.json(Array.from(deviceWhitelist));
 });
 
+// Section: TimeWindow validation
 function validateTimeWindow(timeWindow) {
   if (!timeWindow || typeof timeWindow.start !== 'number' || typeof timeWindow.end !== 'number') {
     throw validationError('timeWindow.start and timeWindow.end must be numbers');
@@ -153,10 +167,12 @@ function validateTimeWindow(timeWindow) {
   }
 }
 
+// Section: Lookup helpers
 function findDevice(deviceId) {
   return state.deviceSpecs.find((d) => d.payload.deviceId === deviceId);
 }
 
+// Section: Consent creation with policy checks
 function createConsent(input) {
   const timeWindow = input?.timeWindow;
   const deviceId = input?.deviceId || input?.deviceID;
@@ -235,12 +251,14 @@ function createConsent(input) {
   return { consent, device };
 }
 
+// Section: Post-push accounting (consume available flex)
 function decrementFlex(deviceId, amount) {
   const device = findDevice(deviceId);
   if (!device) return;
   device.payload.availableFlexKW = device.payload.availableFlexKW - amount;
 }
 
+// Section: Consent issuance endpoint
 app.post('/issue/consent', (req, res) => {
   try {
     const { consent } = createConsent(req.body || {});
@@ -250,6 +268,7 @@ app.post('/issue/consent', (req, res) => {
   }
 });
 
+// Section: Consent dispatch to Aggregator
 app.post('/push/consent-to-aggregator', async (req, res) => {
   const body = req.body || {};
   const targetBase = (body.aggregatorUrl || defaultAggregatorUrl || '').replace(/\/$/, '');
@@ -292,6 +311,7 @@ app.post('/push/consent-to-aggregator', async (req, res) => {
   }
 });
 
+// Section: Seed demo data for OEM + devices + prequals
 app.post('/admin/seed-one-oem-five-devices', (req, res) => {
   const { oem, devices } = buildSeedOneOemFiveDevices();
   // reset state
@@ -323,6 +343,7 @@ app.post('/admin/seed-one-oem-five-devices', (req, res) => {
   res.json({ status: 'seeded', oems: 1, devices: devices.length, whitelist: Array.from(deviceWhitelist) });
 });
 
+// Section: Server boot
 const port = process.env.PORT || 8081;
 if (require.main === module) {
   app.listen(port, () => {
@@ -330,6 +351,7 @@ if (require.main === module) {
   });
 }
 
+// Section: Exports for tests
 module.exports = {
   state,
   validateTimeWindow,
@@ -342,3 +364,5 @@ module.exports = {
   decrementFlex,
   deviceWhitelist,
 };
+
+
