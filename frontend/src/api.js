@@ -31,14 +31,6 @@ export const api = {
     listDevices: (oemId) => request(agentBase, `/wallet/devices${oemId ? `?oemId=${encodeURIComponent(oemId)}` : ""}`),
     getDevice: (deviceId) => request(agentBase, `/wallet/devices/${deviceId}`),
     listWhitelist: () => request(agentBase, "/admin/whitelist"),
-    ingestPrequal: (payload) =>
-      request(agentBase, "/wallet/ingest/prequal", {
-        method: "POST",
-        body: JSON.stringify({
-          type: "PrequalificationCredential",
-          payload,
-        }),
-      }),
     pushConsent: ({ deviceId, timeWindow, maxFlexKW }) =>
       request(agentBase, "/push/consent-to-aggregator", {
         method: "POST",
@@ -61,6 +53,11 @@ export const api = {
       request(tsoBase, "/verify/aggregator-presentation", {
         method: "POST",
         body: JSON.stringify(presentation),
+      }),
+    issuePrequalification: (payload) =>
+      request(tsoBase, "/prequalifications/issue", {
+        method: "POST",
+        body: JSON.stringify(payload),
       }),
   },
 };

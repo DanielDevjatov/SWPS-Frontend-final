@@ -30,6 +30,7 @@ const deviceWhitelist = new Set(initialDeviceWhitelist);
 // Section: Service identity and default URLs
 const agentId = process.env.AGENT_ID || 'agent-1';
 const defaultAggregatorUrl = process.env.AGGREGATOR_URL || 'http://localhost:8082';
+const tsoIssuer = process.env.TSO_ISSUER || 'tso-1';
 
 // Section: Error helper used by policy checks
 function validationErrorWithStatus(message, statusCode = 400, extra = {}) {
@@ -88,10 +89,16 @@ function storeDeviceSpec(body) {
 
 // Section: Prequalification storage (normalized credential)
 function storePrequalification(body) {
+  if (!body?.issuer || body.issuer !== tsoIssuer) {
+    throw validationErrorWithStatus('invalid_issuer', 403, {
+      code: 'invalid_issuer',
+      message: `Prequal must be issued by ${tsoIssuer}`,
+    });
+  }
   const stored = normalizePrequalification(body, {
     deviceID: body.payload?.deviceId || body.payload?.deviceID,
     oemId: body.payload?.oemId,
-    issuer: agentId,
+    issuer: tsoIssuer,
     holder: agentId,
     id: uuidv4(),
   });
@@ -311,7 +318,7 @@ app.post('/push/consent-to-aggregator', async (req, res) => {
   }
 });
 
-// Section: Seed demo data for OEM + devices + prequals
+// Section: Seed demo data for OEM + devices (prequals issued by TSO)
 app.post('/admin/seed-one-oem-five-devices', (req, res) => {
   const { oem, devices } = buildSeedOneOemFiveDevices();
   // reset state
@@ -323,18 +330,6 @@ app.post('/admin/seed-one-oem-five-devices', (req, res) => {
   storeOem(oem);
   devices.forEach((d) => {
     storeDeviceSpec(d);
-    // add a wide prequalification per device
-    storePrequalification({
-      type: 'PrequalificationCredential',
-      payload: {
-        prequalificationType: 'seed',
-        gridConnectionArea: d.payload.gridConnectionArea,
-        validFrom: 0,
-        validTo: Date.now() + 1000 * 60 * 60 * 24 * 365, // ~1 Jahr
-        deviceId: d.payload.deviceId,
-        oemId: d.payload.oemId,
-      },
-    });
   });
 
   // whitelist dev-1..dev-4

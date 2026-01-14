@@ -42,9 +42,16 @@ If the frontend runs in Docker, use service hostnames or a reverse proxy.
 
 ## Seed Demo Data
 
-Seed one OEM and five devices (with whitelist + prequals for demo use):
+Seed one OEM and five devices (whitelist only; prequals are issued by TSO):
 ```bash
 curl -X POST http://localhost:8081/admin/seed-one-oem-five-devices
+```
+
+Issue a prequalification from the TSO (stored in the Agent wallet):
+```bash
+curl -X POST http://localhost:8083/prequalifications/issue \
+  -H "Content-Type: application/json" \
+  -d "{\"deviceId\":\"dev-1\",\"oemId\":\"oem-1\",\"gridConnectionArea\":\"area1\",\"validFrom\":0,\"validTo\":1000,\"prequalificationType\":\"typeA\"}"
 ```
 
 ## Health Checks
@@ -57,21 +64,28 @@ curl http://localhost:8083/health
 
 ## End-to-End Demo (API)
 
-1) Push consent from Agent to Aggregator:
+1) Issue prequalification from TSO:
+```bash
+curl -X POST http://localhost:8083/prequalifications/issue \
+  -H "Content-Type: application/json" \
+  -d "{\"deviceId\":\"dev-1\",\"oemId\":\"oem-1\",\"gridConnectionArea\":\"area1\",\"validFrom\":0,\"validTo\":1000,\"prequalificationType\":\"typeA\"}"
+```
+
+2) Push consent from Agent to Aggregator:
 ```bash
 curl -X POST http://localhost:8081/push/consent-to-aggregator \
   -H "Content-Type: application/json" \
   -d "{\"deviceId\":\"dev-1\",\"timeWindow\":{\"start\":100,\"end\":200},\"maxFlexKW\":2}"
 ```
 
-2) Aggregate in Aggregator:
+3) Aggregate in Aggregator:
 ```bash
 curl -X POST http://localhost:8082/presentations/aggregate \
   -H "Content-Type: application/json" \
   -d "{\"timeWindow\":{\"start\":100,\"end\":200}}"
 ```
 
-3) Verify in TSO:
+4) Verify in TSO:
 ```bash
 curl -X POST http://localhost:8083/verify/aggregator-presentation \
   -H "Content-Type: application/json" \

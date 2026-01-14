@@ -23,6 +23,9 @@ const verifications = [];
 const zkeyPath =
   process.env.ZKP_ZKEY_PATH ||
   path.join(__dirname, '..', 'zkp', 'test_circuit', 'test_circuit.zkey');
+const tsoIssuer = process.env.TSO_ISSUER || 'tso-1';
+const agentId = process.env.AGENT_ID || 'agent-1';
+const agentUrl = process.env.AGENT_URL || 'http://agent:8081';
 
 // Section: Lazy-load the verification key from the zkey file
 let verificationKeyPromise = null;
@@ -43,6 +46,51 @@ app.get('/health', (req, res) => {
 // Section: Numeric validation helper
 function isNumber(value) {
   return typeof value === 'number' && Number.isFinite(value);
+}
+
+// Section: Validate prequalification issuance input
+function validatePrequalInput(body) {
+  if (!body || typeof body !== 'object') {
+    throw new Error('Invalid request body');
+  }
+  const {
+    deviceId,
+    oemId,
+    gridConnectionArea,
+    validFrom,
+    validTo,
+    prequalificationType,
+  } = body;
+
+  if (!deviceId || !oemId || !gridConnectionArea || !prequalificationType) {
+    throw new Error('Missing required fields');
+  }
+  if (!isNumber(validFrom) || !isNumber(validTo)) {
+    throw new Error('validFrom and validTo must be numbers');
+  }
+  if (validFrom >= validTo) {
+    throw new Error('validFrom must be before validTo');
+  }
+}
+
+// Section: Build a PrequalificationCredential issued by TSO
+function buildPrequalificationCredential(body) {
+  validatePrequalInput(body);
+  return {
+    type: 'PrequalificationCredential',
+    id: uuidv4(),
+    issuer: tsoIssuer,
+    holder: agentId,
+    timestamp: Date.now(),
+    payload: {
+      deviceId: body.deviceId,
+      oemId: body.oemId,
+      gridConnectionArea: body.gridConnectionArea,
+      validFrom: body.validFrom,
+      validTo: body.validTo,
+      prequalificationType: body.prequalificationType,
+    },
+  };
 }
 
 // Section: Validate + verify AggregatorPresentations (includes ZKP)
@@ -88,6 +136,42 @@ async function verifyAggregatorPresentation(presentation, opts = {}) {
     return { status: 'invalid', reason: `ZKP verification failed: ${err.message}` };
   }
 }
+
+// Section: Issue prequalification and push to Agent wallet
+app.post('/prequalifications/issue', async (req, res) => {
+  try {
+    const credential = buildPrequalificationCredential(req.body);
+    const response = await fetch(`${agentUrl.replace(/\/$/, '')}/wallet/ingest/prequal`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(credential),
+    });
+
+    const responseText = await response.text();
+    let parsedResponse = null;
+    try {
+      parsedResponse = JSON.parse(responseText);
+    } catch (_) {
+      parsedResponse = responseText || null;
+    }
+
+    if (!response.ok) {
+      return res.status(502).json({
+        code: 'agent_unreachable',
+        message: 'Agent ingest failed',
+        agentResponse: parsedResponse,
+      });
+    }
+
+    res.status(201).json({
+      status: 'issued',
+      prequalId: credential.id,
+      agentIngest: parsedResponse,
+    });
+  } catch (err) {
+    res.status(400).json({ code: 'invalid_request', message: err.message });
+  }
+});
 
 // Section: Ingest endpoint that verifies and stores presentations
 app.post('/presentations/ingest', async (req, res) => {
@@ -147,6 +231,6 @@ if (require.main === module) {
 }
 
 // Section: Public module API for tests
-module.exports = { verifyAggregatorPresentation };
+module.exports = { verifyAggregatorPresentation, buildPrequalificationCredential };
 
 

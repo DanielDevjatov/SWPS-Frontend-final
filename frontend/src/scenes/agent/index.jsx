@@ -98,6 +98,33 @@ const Agent = () => {
     }
   };
 
+  /* ===== PREQUAL REQUEST (TSO ISSUES) ===== */
+  const requestPrequalification = async () => {
+    setStatus(null);
+    const selected = devices.find((d) => d.payload.deviceId === form.deviceId);
+    if (!selected) {
+      setStatus({ type: "error", message: "Select a device first" });
+      return;
+    }
+    try {
+      const payload = {
+        deviceId: selected.payload.deviceId,
+        oemId: selected.payload.oemId,
+        gridConnectionArea: selected.payload.gridConnectionArea,
+        validFrom: 0,
+        validTo: 1000,
+        prequalificationType: "typeA",
+      };
+      const result = await api.tso.issuePrequalification(payload);
+      setStatus({
+        type: "success",
+        message: `Prequalification issued: ${result.prequalId || ""}`,
+      });
+    } catch (e) {
+      setStatus({ type: "error", message: e.body?.message || e.message });
+    }
+  };
+
   /* ===== AUTOMATION HANDLERS ===== */
   const startAutomation = (minutes) => {
     setIntervalMinutes(minutes);
@@ -202,6 +229,15 @@ const Agent = () => {
           disabled={!form.deviceId}
         >
           Create & Push Consent
+        </Button>
+        <Button
+          sx={{ mt: "20px", ml: "10px" }}
+          variant="outlined"
+          color="info"
+          onClick={requestPrequalification}
+          disabled={!form.deviceId}
+        >
+          Request Prequalification
         </Button>
       </Box>
 

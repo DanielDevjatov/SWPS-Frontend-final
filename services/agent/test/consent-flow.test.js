@@ -50,6 +50,7 @@ function seedDevice({ deviceId, availableFlexKW, oemId, maxFlexCapKW = 5 }) {
 function seedPrequal({ deviceId, oemId, validFrom = 0, validTo = 1000 }) {
   server.storePrequalification({
     type: 'PrequalificationCredential',
+    issuer: 'tso-1',
     payload: { prequalificationType: 'type', gridConnectionArea: 'area', validFrom, validTo, deviceId, oemId },
   });
 }
@@ -139,6 +140,25 @@ test('maxFlex exceeds device cap fails', () => {
   seedPrequal({ deviceId: 'dev-cap', oemId: 'oem-1' });
   const err = assert.throws(() => server.createConsent({ deviceId: 'dev-cap', timeWindow: { start: 1, end: 2 }, maxFlexKW: 2 }));
   assert.match(err.message, /maxFlex_exceeds_device_cap/);
+});
+
+test('prequal ingest rejects non-TSO issuer', () => {
+  reset();
+  const err = assert.throws(() =>
+    server.storePrequalification({
+      type: 'PrequalificationCredential',
+      issuer: 'not-tso',
+      payload: {
+        prequalificationType: 'type',
+        gridConnectionArea: 'area',
+        validFrom: 0,
+        validTo: 10,
+        deviceId: 'dev-x',
+        oemId: 'oem-x',
+      },
+    })
+  );
+  assert.match(err.message, /invalid_issuer/);
 });
 
 
