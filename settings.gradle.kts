@@ -1,4 +1,4 @@
-rootProject.name = "deer-prototype"
+﻿// Summary (FinalFinal): Added code to *.\r\n// Purpose: document changes and explain behavior.\r\nrootProject.name = "deer-prototype"
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
@@ -30,3 +30,4 @@ dependencyResolutionManagement {
 
 include(":wallet")
 include(":aggregator")
+

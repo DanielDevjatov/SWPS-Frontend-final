@@ -1,4 +1,4 @@
-### Story
+﻿<!-- Summary (FinalFinal): Added code to *. Purpose: document changes and explain behavior. -->\r\n### Story
 
 ---
 <!-- Link to related story issue. -->
@@ -17,3 +17,4 @@
 - [ ] Changes have been successfully tested
 
 /label ~task ~"ready for development"
+

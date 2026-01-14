@@ -1,7 +1,11 @@
+// Summary (FinalFinal): Added code to *.
+// Purpose: document changes and explain behavior.
+// Section: Test framework + server under test
 const test = require('node:test');
 const assert = require('node:assert');
 const server = require('../src/server');
 
+// Section: Reset shared in-memory state between tests
 function reset() {
   server.state.deviceSpecs = [];
   server.state.prequals = [];
@@ -10,6 +14,7 @@ function reset() {
   server.deviceWhitelist.clear();
 }
 
+// Section: Seed helper for OEM credentials
 function seedOem(oemId = 'oem-test') {
   server.storeOem({
     type: 'OEMCredential',
@@ -18,6 +23,7 @@ function seedOem(oemId = 'oem-test') {
   return oemId;
 }
 
+// Section: Seed helper for device specs + whitelist inclusion
 function seedDevice({ deviceId, availableFlexKW, oemId, maxFlexCapKW = 5 }) {
   if (!server.state.oems.find((o) => o.payload.oemId === oemId)) {
     seedOem(oemId);
@@ -40,6 +46,7 @@ function seedDevice({ deviceId, availableFlexKW, oemId, maxFlexCapKW = 5 }) {
   server.deviceWhitelist.add(deviceId);
 }
 
+// Section: Seed helper for prequalification credentials
 function seedPrequal({ deviceId, oemId, validFrom = 0, validTo = 1000 }) {
   server.storePrequalification({
     type: 'PrequalificationCredential',
@@ -47,6 +54,7 @@ function seedPrequal({ deviceId, oemId, validFrom = 0, validTo = 1000 }) {
   });
 }
 
+// Section: Policy test cases for consent creation
 test('push consent fails for unknown device', () => {
   reset();
   assert.throws(() => server.createConsent({ deviceId: 'unknown', timeWindow: { start: 1, end: 2 }, maxFlexKW: 1 }), /unknown_device/);
@@ -132,3 +140,5 @@ test('maxFlex exceeds device cap fails', () => {
   const err = assert.throws(() => server.createConsent({ deviceId: 'dev-cap', timeWindow: { start: 1, end: 2 }, maxFlexKW: 2 }));
   assert.match(err.message, /maxFlex_exceeds_device_cap/);
 });
+
+

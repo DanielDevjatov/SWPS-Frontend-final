@@ -1,4 +1,4 @@
-include:
+﻿# Summary (FinalFinal): Added code to *.\r\n# Purpose: document changes and explain behavior.\r\ninclude:
   - template: Jobs/Code-Quality.gitlab-ci.yml
 
 default:
@@ -216,3 +216,4 @@ publish:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       when: manual
       allow_failure: true
+

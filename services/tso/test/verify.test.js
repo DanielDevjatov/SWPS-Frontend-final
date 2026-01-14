@@ -1,7 +1,11 @@
+// Summary (FinalFinal): Added code to *.
+// Purpose: document changes and explain behavior.
+// Section: Test framework + verifier under test
 const test = require('node:test');
 const assert = require('node:assert');
 const { verifyAggregatorPresentation } = require('../src/server');
 
+// Section: validation behavior tests
 test('verifyAggregatorPresentation rejects invalid totals', async () => {
   const result = await verifyAggregatorPresentation(
     {
@@ -31,3 +35,5 @@ test('verifyAggregatorPresentation accepts matching publicSignals when skipZkp',
   );
   assert.strictEqual(result.status, 'valid');
 });
+
+

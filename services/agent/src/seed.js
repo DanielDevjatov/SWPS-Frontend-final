@@ -1,5 +1,9 @@
+// Summary (FinalFinal): Added code to *.
+// Purpose: document changes and explain behavior.
+// Section: Imports used for deterministic IDs in seed data
 const { v4: uuidv4 } = require('uuid');
 
+// Section: Build demo OEM + device credentials for UI/testing
 function buildSeedOneOemFiveDevices() {
   const oem = {
     type: 'OEMCredential',
@@ -93,4 +97,7 @@ function buildSeedOneOemFiveDevices() {
   return { oem, devices };
 }
 
+// Section: Public module API
 module.exports = { buildSeedOneOemFiveDevices };
+
+

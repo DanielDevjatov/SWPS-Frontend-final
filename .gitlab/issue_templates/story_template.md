@@ -1,4 +1,4 @@
-### Epic
+﻿<!-- Summary (FinalFinal): Added code to *. Purpose: document changes and explain behavior. -->\r\n### Epic
 
 ---
 <!-- Link to related epic issue. -->
@@ -22,3 +22,4 @@
 <!-- Give a brief description on how the acceptance criteria can be verified. -->
 
 /label ~story ~refinement
+

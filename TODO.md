@@ -1,4 +1,4 @@
-# TODO: General
+﻿<!-- Summary (FinalFinal): Added code to *. Purpose: document changes and explain behavior. -->\r\n# TODO: General
 * [ ] review ZKP
 * [ ] review Presentation Mappings
 
@@ -26,4 +26,5 @@
 
 * [x] Update project Wiki
 * [ ] Review and update GitHub Issues
+
 

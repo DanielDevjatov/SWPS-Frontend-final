@@ -1,8 +1,12 @@
+// Summary (FinalFinal): Added code to *.
+// Purpose: document changes and explain behavior.
+// Section: Test framework + helpers under test
 const test = require('node:test');
 const assert = require('node:assert');
 const { normalizePrequalification, selectPrequalification } = require('../src/prequal');
 const { normalizeDeviceSpec } = require('../src/device');
 
+// Section: selection logic behavior
 test('selectPrequalification throws 403 when none match', () => {
   assert.throws(
     () => selectPrequalification([], 'dev-1', { start: 10, end: 20 }),
@@ -56,3 +60,5 @@ test('normalizeDeviceSpec enforces availableFlexKW number', () => {
     /availableFlexKW must be a number/
   );
 });
+
+

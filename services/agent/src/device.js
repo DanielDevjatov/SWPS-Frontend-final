@@ -1,6 +1,10 @@
+// Summary (FinalFinal): Added code to *.
+// Purpose: document changes and explain behavior.
+// Section: Imports used for UUIDs and shared validation errors
 const { v4: uuidv4 } = require('uuid');
 const { validationError } = require('./prequal');
 
+// Section: Normalize + validate device specification payloads
 function normalizeDeviceSpec(body, defaults = {}) {
   if (!body || body.type !== 'DeviceSpecificationsCredential') {
     throw validationError('Expected credential type DeviceSpecificationsCredential');
@@ -39,6 +43,7 @@ function normalizeDeviceSpec(body, defaults = {}) {
     throw validationError('location is required');
   }
 
+  // Build the normalized credential with standard metadata fields.
   return {
     type: 'DeviceSpecificationsCredential',
     id: body.id || defaults.id || uuidv4(),
@@ -49,4 +54,7 @@ function normalizeDeviceSpec(body, defaults = {}) {
   };
 }
 
+// Section: Public module API
 module.exports = { normalizeDeviceSpec };
+
+
