@@ -2,6 +2,7 @@ import { Box } from "@mui/material";
 import Header from "../../components/Header";
 import LineChart from "../../components/LineChart";
 
+/* Demo page for the generic line chart component. */
 const Line = () => {
   return (
     <Box m="20px">

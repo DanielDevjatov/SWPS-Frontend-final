@@ -2,6 +2,7 @@ import { createContext, useState, useMemo } from "react";
 import { createTheme } from "@mui/material/styles";
 
 // color design tokens export
+// Tokens are used throughout scenes to keep colors consistent by mode.
 export const tokens = (mode) => ({
   ...(mode === "dark"
     ? {
@@ -121,6 +122,7 @@ export const tokens = (mode) => ({
 });
 
 // mui theme settings
+// MUI theme configuration built from the color tokens.
 export const themeSettings = (mode) => {
   const colors = tokens(mode);
   return {
@@ -194,11 +196,13 @@ export const themeSettings = (mode) => {
 };
 
 // context for color mode
+// Provides a global toggle for light vs. dark mode.
 export const ColorModeContext = createContext({
   toggleColorMode: () => {},
 });
 
 export const useMode = () => {
+  // Local hook holds the current mode and exposes a toggle.
   const [mode, setMode] = useState("dark");
 
   const colorMode = useMemo(

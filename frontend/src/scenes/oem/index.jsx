@@ -15,14 +15,18 @@ import { tokens } from "../../theme";
 import { useEffect, useState } from "react";
 import { api } from "../../api";
 
+/* OEM view: read-only access to OEMs and device specs stored by Agent. */
 const OEM = () => {
   const theme = useTheme();
+  // Theme tokens keep the view aligned with the global palette.
   const colors = tokens(theme.palette.mode);
 
+  /* Agent wallet data surfaced for OEM visibility. */
   const [oems, setOems] = useState([]);
   const [devices, setDevices] = useState([]);
   const [status, setStatus] = useState(null);
 
+  /* Load OEMs and devices from the Agent service. */
   const loadData = async () => {
     try {
       const [os, ds] = await Promise.all([api.agent.listOems(), api.agent.listDevices()]);
@@ -37,6 +41,7 @@ const OEM = () => {
     loadData();
   }, []);
 
+  // Demo seeding is an optional shortcut to populate sample data.
   const seed = async () => {
     setStatus(null);
     try {

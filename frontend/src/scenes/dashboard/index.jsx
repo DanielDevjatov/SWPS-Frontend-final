@@ -13,10 +13,13 @@ import ProgressCircle from "../../components/ProgressCircle";
 import { useEffect, useState } from "react";
 import { api } from "../../api";
 
+/* Dashboard view: cross-service snapshot of activity and capacity. */
 const Dashboard = () => {
   const theme = useTheme();
+  // Theme tokens keep the dashboard aligned with the global palette.
   const colors = tokens(theme.palette.mode);
 
+  /* Aggregate counters shown in the stat tiles. */
   const [metrics, setMetrics] = useState({
     consents: 0,
     presentations: 0,
@@ -24,7 +27,9 @@ const Dashboard = () => {
     agents: 0,
   });
 
+  /* Raw device data used for the availability chart. */
   const [devices, setDevices] = useState([]);
+  /* ZKP stats derived from Aggregator presentation proofs. */
   const [zkpStats, setZkpStats] = useState({
     total: 0,
     valid: 0,
@@ -33,6 +38,7 @@ const Dashboard = () => {
   useEffect(() => {
     const load = async () => {
       try {
+        // Pull data from Agent, Aggregator, and TSO to build a unified snapshot.
         const [cons, presAgg, verifs, devs, oems] = await Promise.all([
           api.aggregator.listConsents().catch(() => []),
           api.aggregator.listPresentations().catch(() => []),
@@ -63,19 +69,23 @@ const Dashboard = () => {
     load();
   }, []);
 
+  // Normalize values into a 0-1 progress range for stat tiles.
   const toProgress = (value, scale = 10) =>
     Math.min(1, scale > 0 ? value / scale : 0);
 
+  // Aggregate available flexibility across all devices.
   const totalAvail = devices.reduce(
     (sum, d) => sum + (d.payload?.availableFlexKW || 0),
     0
   );
 
+  // Project device data into a chart-friendly shape.
   const deviceBarData = devices.map((d) => ({
     device: d.payload.deviceId,
     flex: d.payload.availableFlexKW || 0,
   }));
 
+  // Display validation rate for Aggregator presentations.
   const zkpProgress =
     zkpStats.total > 0 ? zkpStats.valid / zkpStats.total : 0;
 

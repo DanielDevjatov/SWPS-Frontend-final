@@ -17,19 +17,24 @@ import { tokens } from "../../theme";
 import { useEffect, useState } from "react";
 import { api } from "../../api";
 
+/* Aggregator view: monitor consents and build aggregated presentations. */
 const Aggregator = () => {
   const theme = useTheme();
+  // Theme tokens keep the UI aligned with the global palette.
   const colors = tokens(theme.palette.mode);
 
+  /* Aggregator data and UI status. */
   const [consents, setConsents] = useState([]);
   const [presentations, setPresentations] = useState([]);
   const [deviceBundles, setDeviceBundles] = useState([]);
   const [status, setStatus] = useState(null);
 
   /* ===== AUTOMATION STATE ===== */
+  // Automation controls timed aggregation runs from the UI.
   const [automationActive, setAutomationActive] = useState(false);
   const [intervalMinutes, setIntervalMinutes] = useState(null);
 
+  /* Pull current consents, presentations, and device bundles from the service. */
   const loadData = async () => {
     try {
       const [c, p, bundles] = await Promise.all([
@@ -45,11 +50,13 @@ const Aggregator = () => {
     }
   };
 
+  /* Initial load so the view reflects current aggregator state. */
   useEffect(() => {
     loadData();
   }, []);
 
   /* ===== MANUAL AGGREGATION ===== */
+  // Create a new aggregated presentation; this is what automation reuses.
   const aggregate = async () => {
     setStatus(null);
     try {
@@ -65,6 +72,7 @@ const Aggregator = () => {
   };
 
   /* ===== AUTOMATION HANDLERS ===== */
+  // Toggle automation from UI controls; interval effect is handled below.
   const startAutomation = (minutes) => {
     setIntervalMinutes(minutes);
     setAutomationActive(true);
@@ -82,6 +90,20 @@ const Aggregator = () => {
       message: "Automation stopped",
     });
   };
+
+  /* Periodically run the aggregation pipeline while automation is active. */
+  useEffect(() => {
+    if (!automationActive || !intervalMinutes) {
+      return undefined;
+    }
+
+    const intervalMs = intervalMinutes * 60 * 1000;
+    const intervalId = setInterval(() => {
+      aggregate();
+    }, intervalMs);
+
+    return () => clearInterval(intervalId);
+  }, [automationActive, intervalMinutes]);
 
   return (
     <Box m="20px">

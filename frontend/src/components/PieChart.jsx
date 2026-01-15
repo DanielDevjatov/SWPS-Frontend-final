@@ -3,8 +3,10 @@ import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import { mockPieData as data } from "../data/mockData";
 
+/* Simple pie chart component backed by mock data. */
 const PieChart = () => {
   const theme = useTheme();
+  // Theme tokens are used to color labels and legend text.
   const colors = tokens(theme.palette.mode);
   return (
     <ResponsivePie

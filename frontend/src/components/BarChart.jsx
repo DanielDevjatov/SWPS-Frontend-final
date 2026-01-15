@@ -3,9 +3,12 @@ import { ResponsiveBar } from "@nivo/bar";
 import { tokens } from "../theme";
 import { mockBarData as data } from "../data/mockData";
 
+/* Generic bar chart with optional dashboard-friendly defaults. */
 const BarChart = ({ isDashboard = false, data: customData, keys, indexBy, yLabel, yTickValues, maxValue }) => {
   const theme = useTheme();
+  // Tokens keep chart colors consistent with the active theme.
   const colors = tokens(theme.palette.mode);
+  // Fall back to mock data when no dataset is supplied.
   const barData = customData || data;
   const barKeys = keys || ["hot dog", "burger", "sandwich", "kebab", "fries", "donut"];
   const barIndex = indexBy || "country";

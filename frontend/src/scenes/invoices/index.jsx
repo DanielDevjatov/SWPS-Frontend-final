@@ -4,9 +4,12 @@ import { tokens } from "../../theme";
 import { mockDataInvoices } from "../../data/mockData";
 import Header from "../../components/Header";
 
+/* Demo invoices table with styled cost cells. */
 const Invoices = () => {
   const theme = useTheme();
+  // Theme tokens align the DataGrid styling with the app palette.
   const colors = tokens(theme.palette.mode);
+  // Column configuration for mock invoice data.
   const columns = [
     { field: "id", headerName: "ID" },
     {

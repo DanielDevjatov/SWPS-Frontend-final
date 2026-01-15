@@ -21,19 +21,24 @@ import { tokens } from "../../theme";
 import { useEffect, useState } from "react";
 import { api } from "../../api";
 
+/* Agent view: manage wallet data, create consents, and dispatch to Aggregator. */
 const Agent = () => {
   const theme = useTheme();
+  // Theme tokens keep the UI consistent with the dashboard palette.
   const colors = tokens(theme.palette.mode);
 
+  /* Wallet data and UI status. */
   const [devices, setDevices] = useState([]);
   const [oems, setOems] = useState([]);
   const [whitelist, setWhitelist] = useState([]);
   const [status, setStatus] = useState(null);
 
   /* ===== AUTOMATION STATE ===== */
+  // Automation is local UI state that controls a periodic consent push.
   const [automationActive, setAutomationActive] = useState(false);
   const [intervalMinutes, setIntervalMinutes] = useState(null);
 
+  /* Form state for the consent payload sent to the Agent service. */
   const [form, setForm] = useState({
     deviceId: "",
     maxFlexKW: "",
@@ -41,11 +46,13 @@ const Agent = () => {
     timeWindowEnd: 200,
   });
 
+  // Normalize timeWindow into numeric values for the API payload.
   const timeWindow = {
     start: Number(form.timeWindowStart),
     end: Number(form.timeWindowEnd),
   };
 
+  /* Pull the latest wallet state from the Agent service. */
   const loadData = async () => {
     try {
       const [oemData, deviceData, wl] = await Promise.all([
@@ -61,11 +68,13 @@ const Agent = () => {
     }
   };
 
+  /* Initial load so the view reflects current wallet data. */
   useEffect(() => {
     loadData();
   }, []);
 
   /* ===== SEED ===== */
+  // Seed endpoint is a demo helper to populate sample OEMs and devices.
   const seed = async () => {
     setStatus(null);
     try {
@@ -79,6 +88,7 @@ const Agent = () => {
 
 
   /* ===== CONSENT ===== */
+  // Build a consent credential and push it to the Aggregator via Agent service.
   const pushConsent = async () => {
     setStatus(null);
     try {
@@ -99,6 +109,7 @@ const Agent = () => {
   };
 
   /* ===== PREQUAL REQUEST (TSO ISSUES) ===== */
+  // Request a prequalification from the TSO; TSO will also inform the Aggregator.
   const requestPrequalification = async () => {
     setStatus(null);
     const selected = devices.find((d) => d.payload.deviceId === form.deviceId);
@@ -126,6 +137,7 @@ const Agent = () => {
   };
 
   /* ===== AUTOMATION HANDLERS ===== */
+  // Toggle automation from UI controls; interval effect is handled below.
   const startAutomation = (minutes) => {
     setIntervalMinutes(minutes);
     setAutomationActive(true);
@@ -140,6 +152,27 @@ const Agent = () => {
     setIntervalMinutes(null);
     setStatus({ type: "success", message: "Automation stopped" });
   };
+
+  /* Periodically push consent while automation is active and a device is selected. */
+  useEffect(() => {
+    if (!automationActive || !intervalMinutes || !form.deviceId) {
+      return undefined;
+    }
+
+    const intervalMs = intervalMinutes * 60 * 1000;
+    const intervalId = setInterval(() => {
+      pushConsent();
+    }, intervalMs);
+
+    return () => clearInterval(intervalId);
+  }, [
+    automationActive,
+    intervalMinutes,
+    form.deviceId,
+    form.maxFlexKW,
+    form.timeWindowStart,
+    form.timeWindowEnd,
+  ]);
 
   return (
     <Box m="20px">

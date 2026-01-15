@@ -1,5 +1,6 @@
 import { tokens } from "../theme";
 
+/* Mock datasets used by demo tables and charts. */
 export const mockDataTeam = [
   {
     id: 1,

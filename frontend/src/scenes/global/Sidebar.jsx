@@ -18,8 +18,10 @@ import TimelineOutlinedIcon from "@mui/icons-material/TimelineOutlined";
 import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
 import MapOutlinedIcon from "@mui/icons-material/MapOutlined";
 
+/* Shared menu item wrapper to keep sidebar entries consistent. */
 const Item = ({ title, to, icon, selected, setSelected }) => {
   const theme = useTheme();
+  // Theme tokens allow the sidebar to adapt to light/dark modes.
   const colors = tokens(theme.palette.mode);
   return (
     <MenuItem
@@ -36,9 +38,11 @@ const Item = ({ title, to, icon, selected, setSelected }) => {
   );
 };
 
+/* App navigation sidebar with grouped sections. */
 const Sidebar = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+  // Local UI state for collapsed view and active selection.
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [selected, setSelected] = useState("Dashboard");
 

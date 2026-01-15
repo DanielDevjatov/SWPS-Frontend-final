@@ -1,7 +1,9 @@
+/* Base URLs are configurable for local vs. deployed environments. */
 const agentBase = process.env.REACT_APP_API_BASE || "http://localhost:8081";
 const aggBase = process.env.REACT_APP_AGG_BASE || "http://localhost:8082";
 const tsoBase = process.env.REACT_APP_TSO_BASE || "http://localhost:8083";
 
+/* Shared request helper so every API call has consistent error handling. */
 async function request(base, path, options = {}) {
   const url = `${base}${path}`;
   const resp = await fetch(url, {
@@ -26,6 +28,7 @@ async function request(base, path, options = {}) {
 
 export const api = {
   agent: {
+    /* Agent wallet and consent issuance endpoints. */
     seedDemo: () => request(agentBase, "/admin/seed-one-oem-five-devices", { method: "POST" }),
     listOems: () => request(agentBase, "/wallet/oems"),
     listDevices: (oemId) => request(agentBase, `/wallet/devices${oemId ? `?oemId=${encodeURIComponent(oemId)}` : ""}`),
@@ -38,6 +41,7 @@ export const api = {
       }),
   },
   aggregator: {
+    /* Aggregator reads consents and creates aggregated presentations. */
     listConsents: () => request(aggBase, "/consents"),
     listPresentations: () => request(aggBase, "/presentations"),
     listDeviceBundles: () => request(aggBase, "/devices/bundles"),
@@ -48,6 +52,7 @@ export const api = {
       }),
   },
   tso: {
+    /* TSO verification and prequalification issuance. */
     listPresentations: () => request(tsoBase, "/presentations"),
     listVerifications: () => request(tsoBase, "/verifications"),
     verifyPresentation: (presentation) =>

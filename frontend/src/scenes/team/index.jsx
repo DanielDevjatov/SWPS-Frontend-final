@@ -7,9 +7,12 @@ import LockOpenOutlinedIcon from "@mui/icons-material/LockOpenOutlined";
 import SecurityOutlinedIcon from "@mui/icons-material/SecurityOutlined";
 import Header from "../../components/Header";
 
+/* Demo team table with role-based styling. */
 const Team = () => {
   const theme = useTheme();
+  // Theme tokens align the DataGrid styling with the app palette.
   const colors = tokens(theme.palette.mode);
+  // Column configuration drives the DataGrid layout and access badges.
   const columns = [
     { field: "id", headerName: "ID" },
     {

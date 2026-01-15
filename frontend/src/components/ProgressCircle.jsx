@@ -1,8 +1,10 @@
 import { Box, useTheme } from "@mui/material";
 import { tokens } from "../theme";
 
+/* Circular progress indicator built from CSS gradients. */
 const ProgressCircle = ({ progress = "0.75", size = "40" }) => {
   const theme = useTheme();
+  // Theme tokens drive the ring and background colors.
   const colors = tokens(theme.palette.mode);
   const angle = progress * 360;
   return (

@@ -26,15 +26,19 @@ import {
   CartesianGrid,
 } from "recharts";
 
+/* TSO view: verify aggregator presentations and visualize system metrics. */
 const TSO = () => {
   const theme = useTheme();
+  // Theme tokens keep charts and tables aligned with the global palette.
   const colors = tokens(theme.palette.mode);
 
+  /* TSO logs and related Aggregator data for cross-checks. */
   const [presentations, setPresentations] = useState([]);
   const [verifications, setVerifications] = useState([]);
   const [aggPresentations, setAggPresentations] = useState([]);
   const [status, setStatus] = useState(null);
 
+  /* Fetch TSO logs plus Aggregator presentations for verification context. */
   const loadData = async () => {
     try {
       const [tp, tv, ap] = await Promise.all([
@@ -52,10 +56,12 @@ const TSO = () => {
     }
   };
 
+  /* Initial load so the dashboard reflects current verification state. */
   useEffect(() => {
     loadData();
   }, []);
 
+  /* Verify the newest Aggregator presentation via the TSO service. */
   const verifyLatest = async () => {
     setStatus(null);
     if (!aggPresentations.length) {
@@ -75,6 +81,7 @@ const TSO = () => {
   /* ===== CHART DATA ===== */
 
   // Last 7 Days
+  // Aggregate total flexibility over the last week for a trend chart.
   const lastWeekKwh = useMemo(() => {
     const days = [...Array(7)].map((_, i) => {
       const d = new Date();
@@ -110,6 +117,7 @@ const TSO = () => {
   }, [presentations]);
 
   // Today Distribution: kWh pro Stunde (0-24) für heute
+  // Distribute each presentation's total evenly across 24 hours.
   const todayDistribution = useMemo(() => {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
@@ -139,6 +147,7 @@ const TSO = () => {
   }, [presentations]);
 
   // Tomorrow Forecast: noch verfügbare kWh aus Aggregator-Präsentationen
+  // Estimate remaining flexibility based on Aggregator totals minus today's usage.
   const tomorrowKwh = useMemo(() => {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);

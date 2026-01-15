@@ -2,8 +2,10 @@ import { Box, Typography, useTheme } from "@mui/material";
 import { tokens } from "../theme";
 import ProgressCircle from "./ProgressCircle";
 
+/* Compact stat tile used on the dashboard. */
 const StatBox = ({ title, subtitle, icon, progress, increase }) => {
   const theme = useTheme();
+  // Theme tokens keep text and accents consistent across tiles.
   const colors = tokens(theme.palette.mode);
 
   return (

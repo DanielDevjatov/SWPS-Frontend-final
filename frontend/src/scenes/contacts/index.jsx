@@ -5,10 +5,13 @@ import { mockDataContacts } from "../../data/mockData";
 import Header from "../../components/Header";
 import { useTheme } from "@mui/material";
 
+/* Demo contacts table with built-in DataGrid toolbar. */
 const Contacts = () => {
   const theme = useTheme();
+  // Theme tokens align the DataGrid styling with the app palette.
   const colors = tokens(theme.palette.mode);
 
+  // Column configuration for mock contact data.
   const columns = [
     { field: "id", headerName: "ID", flex: 0.5 },
     { field: "registrarId", headerName: "Registrar ID" },

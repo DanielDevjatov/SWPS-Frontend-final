@@ -3,6 +3,7 @@ import { useTheme } from "@mui/material";
 import { tokens } from "../theme";
 import { mockLineData as mockData } from "../data/mockData";
 
+/* Generic line chart with optional dashboard styling. */
 const LineChart = ({
   isDashboard = false,
   data = mockData,
@@ -11,6 +12,7 @@ const LineChart = ({
   yMax,
 }) => {
   const theme = useTheme();
+  // Tokenized colors keep the chart consistent across themes.
   const colors = tokens(theme.palette.mode);
 
   return (

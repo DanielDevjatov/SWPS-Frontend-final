@@ -1,3 +1,4 @@
+/* GeoJSON used by the choropleth demo chart. */
 export const geoFeatures = {
   type: "FeatureCollection",
   features: [

@@ -9,9 +9,11 @@ import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
 import SearchIcon from "@mui/icons-material/Search";
 
+/* Topbar with search and quick action icons. */
 const Topbar = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+  // Color mode context toggles the global theme.
   const colorMode = useContext(ColorModeContext);
 
   return (

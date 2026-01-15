@@ -4,8 +4,10 @@ import { geoFeatures } from "../data/mockGeoFeatures";
 import { tokens } from "../theme";
 import { mockGeographyData as data } from "../data/mockData";
 
+/* Choropleth map chart used for geographic demos. */
 const GeographyChart = ({ isDashboard = false }) => {
   const theme = useTheme();
+  // Theme tokens ensure labels and borders match the active palette.
   const colors = tokens(theme.palette.mode);
   return (
     <ResponsiveChoropleth
